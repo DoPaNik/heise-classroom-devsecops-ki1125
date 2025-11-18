@@ -1,0 +1,4 @@
+notebookds/.env
+notebookds/.ipynb_checkpoints
+notebookds/__pycache__/
+my.secrets

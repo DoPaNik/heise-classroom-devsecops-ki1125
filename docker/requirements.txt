@@ -1,0 +1,9 @@
+# Web Framework
+Flask==3.0.0
+# Production WSGI Server
+gunicorn==21.2.0
+# Security Headers
+flask-talisman==1.1.0
+# Environment Variables
+python-dotenv==1.0.0
+# Weitere Dependencies hier...
