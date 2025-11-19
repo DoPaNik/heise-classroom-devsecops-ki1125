@@ -6,9 +6,37 @@ Dieses Repository enthält alle Demo-Materialien, die im Rahmen des Heise-Academ
 
 ## 📚 Inhalte dieses Repos
 
-1. 🔧 Jupyter Notebook: „Dockerfiles mit LLMs erstellen & reviewen“
+### Jupyter Notebooks
 
-TBD
+Die interaktiven Notebooks befinden sich im Verzeichnis `notebooks/` und demonstrieren verschiedene DevSecOps-Praktiken mit KI-Unterstützung:
+
+1. **🐋 Dockerfile.ipynb** – Dockerfiles mit LLMs erstellen & reviewen
+   - Automatisierte Generierung von Dockerfiles mit verschiedenen LLM-Providern (OpenAI, OpenRouter, LM Studio)
+   - Dockerfile-Review und Security-Analyse durch KI
+   - Vergleich verschiedener Modelle (GPT-4o, Claude, DeepSeek, etc.)
+   - Best Practices für Container-Sicherheit und Optimierung
+
+2. **🔐 Secrets.ipynb** – Secret Detection & Management
+   - Pre-Commit Hooks für Secret Detection (detect-secrets, gitleaks)
+   - Git-Secret für verschlüsselte Secrets im Repository
+   - Praktische Demos mit RSA-Keys, API-Tokens und Passwörtern
+   - Vergleich verschiedener Secret-Management-Tools
+
+3. **🔍 SAST.ipynb** – Static Application Security Testing mit Semgrep
+   - Einführung in SAST-Tools und deren Funktionsweise
+   - Semgrep-Installation und Konfiguration
+   - Erkennung typischer Schwachstellen (SQL Injection, Command Injection, Path Traversal, Hardcoded Secrets, Insecure Deserialization)
+   - Custom Rules für projektspezifische Security-Patterns
+   - CI/CD-Integration (GitHub Actions, GitLab CI, Jenkins)
+
+### Container & Infrastructure
+
+4. **🐳 Docker Compose Setups** – Vorkonfigurierte Dependency Track
+   - **Dependency Track** (`dependency-track/`) – SBOM-Analyse und Schwachstellen-Management
+     - Dependency Track 4.13.2
+
+5. **🏗️ Infrastructure as Code** (`iac/`) – IaC-Demos
+   - Pulumi-Beispiele für Cloud-Infrastruktur
 
 ## 💡 Voraussetzungen
 
@@ -50,8 +78,6 @@ Folgende Grundkenntnisse sind hilfreich, um die Demos optimal nutzen zu können:
 - **DevSecOps-Prozesse** – CI/CD, Security-Scans, Automatisierung
 - **Python-Grundlagen** – Zum Verstehen und Anpassen der Code-Beispiele
 - **Git & GitHub Actions** – Für das Arbeiten mit Workflows und automatisierten Pipelines
-
-
 
 
 ## 🚀 Getting Started

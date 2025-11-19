@@ -1,0 +1,2 @@
+--container-options privileged
+--container-architecture linux/arm64
