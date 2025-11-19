@@ -149,6 +149,15 @@ chmod +x runGithubActionLocally.sh
 
 **Hinweis:** Das Script setzt voraus, dass `act` installiert ist und deine Container Engine läuft.
 
+## 🔗 Weitere Repositories
+
+Nachfolgend sind weitere GitHub Repositories gelistet, die im Rahmen von Demos ebenfalls im Classroom verwendet werden:
+
+* [Supply Chain Security](https://github.com/andifalk/supply-chain-security): Demo einer Pipeline mit diversen SAST Werkzeugen auf Basis von GitHub Actions
+* [Security Testing](https://github.com/andifalk/bookmark-service): Demo für automatisierte Security-Tests auf Basis einer unsicheren Java Applikation sowie beispielhaften KI-basierten Code Reviews (Claude Code)
+* [API Security](https://github.com/andifalk/api-security): Wie man APIs hacken kann
+* [Container and Kubernetes Security Workshop](https://andifalk.gitbook.io/container-and-kubernetes-security-workshop): Kompletter Workshop für Container/Kubernetes Security (von Linux Basics bis zu Kubernetes)
+
 ## 🤝 Mitwirkung
 
 Pull Requests, Issues und weitere Verbesserungsvorschläge ausdrücklich gewünscht und willkommen. Dieses Repository soll wachsen – gerne auch mit Beispielen aus eurem Alltag.
