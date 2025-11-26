@@ -1,0 +1,110 @@
+name: STRIDE Threat Modeling
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  threat-model:
+    runs-on: ubuntu-latest
+    name: Analyze PR with STRIDE
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 #v6.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 #v6.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install openai
+
+      - name: Get PR description
+        id: pr_info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get PR body/description
+          PR_BODY=$(gh pr view ${{ github.event.pull_request.number }} --json body --jq '.body')
+
+          # Fallback to title if body is empty
+          if [ -z "$PR_BODY" ] || [ "$PR_BODY" = "null" ]; then
+            PR_BODY=$(gh pr view ${{ github.event.pull_request.number }} --json title --jq '.title')
+          fi
+
+          # Save to file to handle multiline content
+          echo "$PR_BODY" > pr_description.txt
+          echo "PR Description saved to file"
+
+      - name: Run STRIDE Threat Modeling
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          DESCRIPTION=$(cat pr_description.txt)
+
+          if [ -z "$DESCRIPTION" ]; then
+            echo "Keine PR-Beschreibung gefunden. Verwende Fallback."
+            DESCRIPTION="Pull Request ohne detaillierte Beschreibung"
+          fi
+
+          python devsecops_ki_extensions/threat_modeling_pr.py \
+            --description "$DESCRIPTION" \
+            --methodology stride \
+            --output markdown \
+            --output-file threat_model.md
+
+      - name: Comment PR with Threat Model
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #8.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const threatModel = fs.readFileSync('threat_model.md', 'utf8');
+
+            // Check if bot has already commented
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('STRIDE Threat Model Analysis')
+            );
+
+            const commentBody = threatModel;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+              console.log('Updated existing threat model comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+              console.log('Created new threat model comment');
+            }
+
+      - name: Upload Threat Model as Artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 #v5.0.0
+        with:
+          name: threat-model-pr-${{ github.event.pull_request.number }}
+          path: threat_model.md
+          retention-days: 30
