@@ -45,10 +45,11 @@ jobs:
           import json
           import requests
           from datetime import datetime
-          from github import Github
+          from github import Github, Auth
 
-          # GitHub Setup
-          g = Github(os.getenv('GITHUB_TOKEN'))
+          # GitHub Setup mit neuem Auth-Mechanismus
+          auth = Auth.Token(os.getenv('GITHUB_TOKEN'))
+          g = Github(auth=auth)
           repo = g.get_repo(os.getenv('REPO'))
           max_runs = int(os.getenv('MAX_RUNS', 5))
           workflows_input = os.getenv('WORKFLOWS', 'all')
@@ -57,49 +58,70 @@ jobs:
 
           # Alle Workflows oder spezifische
           if workflows_input.lower() == 'all':
-              workflows = repo.get_workflows()
+              workflows = list(repo.get_workflows())
           else:
               workflow_names = [w.strip() for w in workflows_input.split(',')]
-              workflows = [repo.get_workflow(name) for name in workflow_names]
+              workflows = []
+              for name in workflow_names:
+                  try:
+                      workflows.append(repo.get_workflow(name))
+                  except Exception as e:
+                      print(f"⚠️  Workflow '{name}' nicht gefunden: {e}")
 
-          print(f"📦 Sammle Artefakte von Workflows...")
+          print(f"📦 Sammle Artefakte von {len(workflows)} Workflow(s)...")
 
           for workflow in workflows:
-              print(f"\n🔍 Workflow: {workflow.name}")
+              try:
+                  print(f"\n🔍 Workflow: {workflow.name}")
 
-              # Letzte erfolgreiche Runs
-              runs = workflow.get_runs(status='success')[:max_runs]
+                  # Letzte Runs (alle Status)
+                  runs_list = list(workflow.get_runs()[:max_runs])
 
-              for run in runs:
-                  artifacts = run.get_artifacts()
-
-                  if artifacts.totalCount == 0:
+                  if not runs_list:
+                      print(f"  ℹ️  Keine Runs gefunden")
                       continue
 
-                  print(f"  ✓ Run #{run.run_number} ({run.created_at}): {artifacts.totalCount} Artefakt(e)")
+                  for run in runs_list:
+                      try:
+                          artifacts = run.get_artifacts()
 
-                  for artifact in artifacts:
-                      artifact_data = {
-                          'workflow_name': workflow.name,
-                          'workflow_id': workflow.id,
-                          'run_number': run.run_number,
-                          'run_id': run.id,
-                          'run_url': run.html_url,
-                          'artifact_name': artifact.name,
-                          'artifact_id': artifact.id,
-                          'artifact_size': artifact.size_in_bytes,
-                          'artifact_url': artifact.archive_download_url,
-                          'created_at': run.created_at.isoformat(),
-                          'branch': run.head_branch,
-                          'commit_sha': run.head_sha[:7],
-                          'commit_message': run.head_commit.message.split('\n')[0] if run.head_commit else 'N/A',
-                          'actor': run.actor.login
-                      }
+                          if artifacts.totalCount == 0:
+                              continue
 
-                      collected_artifacts.append(artifact_data)
+                          print(f"  ✓ Run #{run.run_number} ({run.created_at}): {artifacts.totalCount} Artefakt(e)")
+
+                          for artifact in artifacts:
+                              artifact_data = {
+                                  'workflow_name': workflow.name,
+                                  'workflow_id': workflow.id,
+                                  'run_number': run.run_number,
+                                  'run_id': run.id,
+                                  'run_url': run.html_url,
+                                  'run_status': run.status,
+                                  'run_conclusion': run.conclusion,
+                                  'artifact_name': artifact.name,
+                                  'artifact_id': artifact.id,
+                                  'artifact_size': artifact.size_in_bytes,
+                                  'artifact_url': artifact.archive_download_url,
+                                  'created_at': run.created_at.isoformat(),
+                                  'branch': run.head_branch,
+                                  'commit_sha': run.head_sha[:7] if run.head_sha else 'N/A',
+                                  'commit_message': run.head_commit.message.split('\n')[0] if run.head_commit else 'N/A',
+                                  'actor': run.actor.login if run.actor else 'N/A'
+                              }
+
+                              collected_artifacts.append(artifact_data)
+                      except Exception as e:
+                          print(f"  ⚠️  Fehler bei Run #{run.run_number}: {e}")
+                          continue
+
+              except Exception as e:
+                  print(f"  ⚠️  Fehler bei Workflow '{workflow.name}': {e}")
+                  continue
 
           # Zusammenfassung
-          print(f"\n📊 Gesammelt: {len(collected_artifacts)} Artefakte von {len(workflows)} Workflow(s)")
+          workflow_count = len(workflows)
+          print(f"\n📊 Gesammelt: {len(collected_artifacts)} Artefakte von {workflow_count} Workflow(s)")
 
           # Als JSON für nächsten Step speichern
           with open('artifacts.json', 'w') as f:
@@ -114,19 +136,26 @@ jobs:
           with open(os.getenv('GITHUB_STEP_SUMMARY'), 'a') as f:
               f.write(f"## 📦 Artefakte Sammlung\n\n")
               f.write(f"- **Repository**: {os.getenv('REPO')}\n")
-              f.write(f"- **Workflows**: {len(workflows)}\n")
+              f.write(f"- **Workflows**: {workflow_count}\n")
               f.write(f"- **Artefakte gesamt**: {len(collected_artifacts)}\n\n")
 
               if collected_artifacts:
                   f.write("### Gefundene Artefakte\n\n")
-                  f.write("| Workflow | Run | Artefakt | Größe |\n")
-                  f.write("|----------|-----|----------|-------|\n")
+                  f.write("| Workflow | Run | Status | Artefakt | Größe |\n")
+                  f.write("|----------|-----|--------|----------|-------|\n")
                   for a in collected_artifacts[:10]:  # Erste 10
                       size_mb = a['artifact_size'] / 1024 / 1024
-                      f.write(f"| {a['workflow_name']} | #{a['run_number']} | {a['artifact_name']} | {size_mb:.2f} MB |\n")
+                      status_icon = "✅" if a['run_conclusion'] == 'success' else "❌" if a['run_conclusion'] == 'failure' else "⏸️"
+                      f.write(f"| {a['workflow_name']} | #{a['run_number']} | {status_icon} {a['run_conclusion']} | {a['artifact_name']} | {size_mb:.2f} MB |\n")
 
                   if len(collected_artifacts) > 10:
                       f.write(f"\n... und {len(collected_artifacts) - 10} weitere\n")
+              else:
+                  f.write("### ℹ️ Keine Artefakte gefunden\n\n")
+                  f.write("Mögliche Gründe:\n")
+                  f.write("- Workflows haben noch keine Runs ausgeführt\n")
+                  f.write("- Keine Artefakte wurden in den letzten Runs erstellt\n")
+                  f.write("- Artefakte sind bereits abgelaufen\n")
 
           EOF
 
