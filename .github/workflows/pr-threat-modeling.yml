@@ -2,7 +2,7 @@ name: STRIDE Threat Modeling
 
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    types: [opened, edited, synchronize, labeled]
 
 permissions:
   pull-requests: write
@@ -12,6 +12,7 @@ jobs:
   threat-model:
     runs-on: ubuntu-latest
     name: Analyze PR with STRIDE
+    if: contains(github.event.pull_request.labels.*.name, 'infrastructure')
 
     steps:
       - name: Checkout repository
