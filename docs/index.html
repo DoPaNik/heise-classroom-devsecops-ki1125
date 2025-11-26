@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Security-Auswertung OWASP ZAP Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #333;
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+        }
+        .summary-box {
+            background: #fff;
+            border-left: 4px solid #3498db;
+            padding: 15px 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #34495e;
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .prio-1 { background: #e74c3c; color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .prio-2 { background: #e67e22; color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .prio-3 { background: #f1c40f; color: #333; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .prio-4 { background: #3498db; color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .risk-medium { color: #e67e22; font-weight: bold; }
+        .risk-low { color: #f1c40f; font-weight: bold; }
+        .risk-info { color: #3498db; font-weight: bold; }
+        .finding {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .finding h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .finding-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .section {
+            margin: 15px 0;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        code {
+            font-family: "Consolas", "Monaco", monospace;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .url-example {
+            background: #ecf0f1;
+            padding: 8px 12px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            margin: 5px 0;
+        }
+        .next-steps {
+            background: #d5edda;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 30px 0;
+        }
+        .next-steps h3 {
+            color: #155724;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🔒 Security-Auswertung aus OWASP ZAP Report</h1>
+<p><strong>Gescannte Seite:</strong> https://saftladen.automatisier.bar<br>
+<strong>Scan-Datum:</strong> 26. November 2025</p>
+
+<div class="summary-box">
+    <h2 style="margin-top:0;">📊 Zusammenfassung</h2>
+    <p><strong>Gesamtbewertung:</strong> Es wurden <strong>6 mittelschwere Probleme</strong> gefunden, die zeitnah behoben werden sollten. Zusätzlich gibt es 6 kleinere Probleme (Low) und 6 informative Hinweise.</p>
+    <ul>
+        <li><span class="risk-medium">Medium:</span> 6 Findings – erfordern zeitnahe Aufmerksamkeit</li>
+        <li><span class="risk-low">Low:</span> 6 Findings – sollten bei Gelegenheit behoben werden</li>
+        <li><span class="risk-info">Informational:</span> 6 Findings – meist nur zur Kenntnisnahme</li>
+    </ul>
+</div>
+
+<div class="warning-box">
+    <strong>⚠️ Wichtig:</strong> Die mittelschweren Probleme betreffen vor allem falsch konfigurierte Sicherheits-Header und öffentlich zugängliche Backup-Dateien. Diese können von Angreifern ausgenutzt werden, um sensible Informationen zu stehlen oder die Anwendung zu kompromittieren.
+</div>
+
+<h2>📋 Übersicht der Findings</h2>
+
+<table>
+    <tr>
+        <th>Prio</th>
+        <th>Risiko</th>
+        <th>Problem</th>
+        <th>Kurzbeschreibung</th>
+        <th>Betroffene Bereiche</th>
+    </tr>
+    <tr>
+        <td><span class="prio-1">1</span></td>
+        <td class="risk-medium">Medium</td>
+        <td>Backup-Dateien öffentlich zugänglich</td>
+        <td>Sicherungskopien von Dateien sind im Web abrufbar</td>
+        <td>/ftp/quarantine* (31 Dateien)</td>
+    </tr>
+    <tr>
+        <td><span class="prio-1">2</span></td>
+        <td class="risk-medium">Medium</td>
+        <td>403-Zugriffssperre umgehbar</td>
+        <td>Geschützte Bereiche können durch URL-Tricks erreicht werden</td>
+        <td>/ftp/*.bak, *.gg, *.pyc (6 URLs)</td>
+    </tr>
+    <tr>
+        <td><span class="prio-2">3</span></td>
+        <td class="risk-medium">Medium</td>
+        <td>CORS falsch konfiguriert</td>
+        <td>Jede fremde Webseite kann Daten von eurer Seite laden</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+    <tr>
+        <td><span class="prio-2">4</span></td>
+        <td class="risk-medium">Medium</td>
+        <td>CSP-Header fehlt</td>
+        <td>Kein Schutz gegen eingeschleuste Skripte (XSS)</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+    <tr>
+        <td><span class="prio-2">5</span></td>
+        <td class="risk-medium">Medium</td>
+        <td>Proxy-Server erkennbar</td>
+        <td>Informationen über die Server-Infrastruktur sind sichtbar</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+    <tr>
+        <td><span class="prio-3">6</span></td>
+        <td class="risk-low">Low</td>
+        <td>HSTS-Header fehlt</td>
+        <td>Browser werden nicht gezwungen, HTTPS zu nutzen</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+    <tr>
+        <td><span class="prio-3">7</span></td>
+        <td class="risk-low">Low</td>
+        <td>Externe JavaScript-Quellen</td>
+        <td>Skripte werden von fremden Servern geladen</td>
+        <td>cdnjs.cloudflare.com</td>
+    </tr>
+    <tr>
+        <td><span class="prio-3">8</span></td>
+        <td class="risk-low">Low</td>
+        <td>Gefährliche JS-Funktionen</td>
+        <td>Unsichere Angular-Funktionen im Code</td>
+        <td>main.js, vendor.js</td>
+    </tr>
+    <tr>
+        <td><span class="prio-3">9</span></td>
+        <td class="risk-low">Low</td>
+        <td>Veralteter Feature-Policy Header</td>
+        <td>Veraltete Header-Bezeichnung wird verwendet</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+    <tr>
+        <td><span class="prio-3">10</span></td>
+        <td class="risk-low">Low</td>
+        <td>Spectre-Schutz fehlt</td>
+        <td>Cross-Origin-Isolation Headers nicht gesetzt</td>
+        <td>Gesamte Anwendung</td>
+    </tr>
+</table>
+
+<h2>🔍 Detaillierte Erklärungen und Lösungen</h2>
+
+<!-- Finding 1 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-1">Prio 1</span> – Backup-Dateien öffentlich zugänglich</h3>
+        <span class="risk-medium">Risiko: Medium</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>Der Webserver liefert Sicherungskopien (Backups) von Dateien aus, wenn man nach typischen Backup-Endungen wie <code>.bak</code>, <code>.backup</code>, <code>.old</code>, <code>.zip</code> oder <code>.tar</code> fragt. Auch Kopien mit Namen wie "quarantine - Copy" oder "quarantine~" sind erreichbar.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <p>Backup-Dateien können sensible Informationen enthalten:</p>
+        <ul>
+            <li>Quellcode mit Kommentaren und Debug-Informationen</li>
+            <li>Konfigurationsdateien mit Passwörtern oder API-Keys</li>
+            <li>Alte Versionen mit bekannten Sicherheitslücken</li>
+            <li>Interne Dokumentation oder Geschäftsgeheimnisse</li>
+        </ul>
+        <p>Ein Angreifer kann diese Dateien einfach herunterladen und analysieren.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">🔎 Wo wurde das gefunden?</div>
+        <p>31 Backup-Dateien im Verzeichnis <code>/ftp/quarantine</code>, zum Beispiel:</p>
+        <div class="url-example">https://saftladen.automatisier.bar/ftp/quarantine.bak</div>
+        <div class="url-example">https://saftladen.automatisier.bar/ftp/quarantine.zip</div>
+        <div class="url-example">https://saftladen.automatisier.bar/ftp/quarantine - Copy</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Lösche alle Backup-Dateien vom Webserver:</p>
+        <pre><code># Auf dem Server ausführen:
+find /var/www/html -name "*.bak" -delete
+find /var/www/html -name "*.backup" -delete
+find /var/www/html -name "*.old" -delete
+find /var/www/html -name "*~" -delete
+find /var/www/html -name "* - Copy*" -delete</code></pre>
+        
+        <p><strong>Schritt 2:</strong> Blockiere Backup-Dateien in der Webserver-Konfiguration. Für Caddy (wird hier verwendet):</p>
+        <pre><code># In der Caddyfile:
+@blocked {
+    path *.bak *.backup *.old *.swp *.zip *.tar *.jar *.log *~
+    path_regexp copy (?i)copy
+}
+respond @blocked 404</code></pre>
+        
+        <p><strong>Schritt 3:</strong> Bearbeite Dateien niemals direkt auf dem Produktivserver. Nutze stattdessen ein Versionskontrollsystem (z.B. Git) und ein Deployment-System.</p>
+    </div>
+</div>
+
+<!-- Finding 2 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-1">Prio 2</span> – 403-Zugriffssperre umgehbar</h3>
+        <span class="risk-medium">Risiko: Medium</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>Dateien, die eigentlich durch einen 403-Fehler ("Zugriff verboten") geschützt sein sollten, können durch einen URL-Trick erreicht werden. Dabei wird <code>/%2e/</code> (das ist ein kodiertes <code>/./</code>) in die URL eingefügt.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <p>Wenn ihr bewusst bestimmte Dateien gesperrt habt (z.B. sensible Konfigurationsdateien), können Angreifer diese Sperre umgehen und trotzdem auf die Dateien zugreifen. Das macht eure Zugriffskontrolle wirkungslos.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">🔎 Wo wurde das gefunden?</div>
+        <p>6 Dateien im /ftp/ Verzeichnis:</p>
+        <div class="url-example">https://saftladen.automatisier.bar/%2e/ftp/coupons_2013.md.bak</div>
+        <div class="url-example">https://saftladen.automatisier.bar/%2e/ftp/encrypt.pyc</div>
+        <div class="url-example">https://saftladen.automatisier.bar/%2e/ftp/suspicious_errors.yml</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Stelle sicher, dass der Webserver URLs normalisiert, bevor er Zugriffsregeln anwendet. Für Caddy:</p>
+        <pre><code># Caddyfile - URL-Normalisierung aktivieren
+{
+    servers {
+        strict_sni_host on
+    }
+}
+
+# Blockiere kodierte Punkte in Pfaden
+@encoded_traversal {
+    path_regexp encoded (?i)(%2e|%252e)
+}
+respond @encoded_traversal 400</code></pre>
+        
+        <p><strong>Schritt 2:</strong> Überprüfe, ob die Dateien überhaupt auf dem Server liegen müssen. Sensible Dateien wie <code>.pyc</code> (kompilierter Python-Code) oder <code>.bak</code> sollten gar nicht im Web-Verzeichnis sein.</p>
+        
+        <p><strong>Schritt 3:</strong> Wenn möglich, nutze eine Whitelist statt einer Blacklist: Erlaube nur bestimmte Dateitypen, anstatt bestimmte zu verbieten.</p>
+    </div>
+</div>
+
+<!-- Finding 3 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-2">Prio 3</span> – CORS falsch konfiguriert</h3>
+        <span class="risk-medium">Risiko: Medium</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>CORS (Cross-Origin Resource Sharing) ist ein Sicherheitsmechanismus, der kontrolliert, welche fremden Webseiten auf eure Daten zugreifen dürfen. Euer Server antwortet mit <code>Access-Control-Allow-Origin: *</code> – das bedeutet: <strong>jede</strong> Webseite der Welt darf Daten von euch laden.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <ul>
+            <li>Eine bösartige Webseite kann im Hintergrund Anfragen an eure Seite schicken</li>
+            <li>Wenn ein Nutzer bei euch eingeloggt ist und dann eine bösartige Seite besucht, könnte diese Seite Daten von eurem Server abfragen</li>
+            <li>Auch wenn Cookies nicht automatisch mitgesendet werden, können öffentliche aber schützenswerte Daten (z.B. durch IP-Whitelisting geschützt) abgegriffen werden</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">🔎 Wo wurde das gefunden?</div>
+        <p>Der Header wird bei allen Antworten gesendet:</p>
+        <div class="url-example">Access-Control-Allow-Origin: *</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Entferne den Wildcard-Header und erlaube nur vertrauenswürdige Domains:</p>
+        <pre><code># Caddyfile - Nur bestimmte Origins erlauben
+header Access-Control-Allow-Origin "https://saftladen.automatisier.bar"
+
+# Oder wenn ihr mehrere Domains braucht:
+@cors_allowed {
+    header_regexp Origin (?i)^https://(saftladen\.automatisier\.bar|trusted-partner\.com)$
+}
+header @cors_allowed Access-Control-Allow-Origin "{http.request.header.Origin}"</code></pre>
+        
+        <p><strong>Schritt 2:</strong> Wenn ihr CORS gar nicht braucht (keine fremden Seiten sollen auf eure API zugreifen), entfernt den Header komplett.</p>
+        
+        <p><strong>Schritt 3:</strong> Falls ihr CORS mit Credentials (Cookies/Auth) nutzt, setzt zusätzlich:</p>
+        <pre><code>Access-Control-Allow-Credentials: true
+# WICHTIG: Dann darf Allow-Origin NICHT "*" sein!</code></pre>
+    </div>
+</div>
+
+<!-- Finding 4 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-2">Prio 4</span> – Content Security Policy (CSP) fehlt</h3>
+        <span class="risk-medium">Risiko: Medium</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>CSP ist wie eine Whitelist für euren Browser: Sie sagt ihm, von welchen Quellen Skripte, Bilder, Styles usw. geladen werden dürfen. Ohne CSP akzeptiert der Browser alles – auch eingeschleusten Schadcode.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <ul>
+            <li><strong>XSS-Angriffe werden einfacher:</strong> Wenn ein Angreifer es schafft, JavaScript in eure Seite einzuschleusen (z.B. über ein Formular), wird es ohne CSP ausgeführt</li>
+            <li><strong>Datendiebstahl:</strong> Eingeschleuster Code kann Cookies, Passwörter oder andere Daten stehlen</li>
+            <li><strong>Malware-Verbreitung:</strong> Eure Seite könnte unbemerkt Schadsoftware von fremden Servern laden</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Füge einen CSP-Header hinzu. Hier ein Beispiel für eine Angular-Anwendung:</p>
+        <pre><code># Caddyfile
+header Content-Security-Policy "default-src 'self'; script-src 'self' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';"</code></pre>
+        
+        <p><strong>Erklärung der Regeln:</strong></p>
+        <ul>
+            <li><code>default-src 'self'</code> – Standardmäßig nur Inhalte von der eigenen Domain erlauben</li>
+            <li><code>script-src 'self' cdnjs.cloudflare.com</code> – Skripte nur von euch und Cloudflare CDN</li>
+            <li><code>frame-ancestors 'none'</code> – Verhindert, dass eure Seite in einem iframe eingebettet wird</li>
+        </ul>
+        
+        <p><strong>Schritt 2:</strong> Teste die CSP zuerst im "Report-Only" Modus:</p>
+        <pre><code>header Content-Security-Policy-Report-Only "..."</code></pre>
+        <p>So seht ihr Verstöße im Browser-DevTools, ohne dass etwas blockiert wird.</p>
+    </div>
+</div>
+
+<!-- Finding 5 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-2">Prio 5</span> – Proxy-Server erkennbar</h3>
+        <span class="risk-medium">Risiko: Medium</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>Durch spezielle HTTP-Methoden (TRACE, OPTIONS) kann ein Angreifer herausfinden, dass ihr Caddy als Reverse Proxy verwendet. Diese Information hilft Angreifern, gezielt nach Schwachstellen in dieser Software zu suchen.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <ul>
+            <li>Angreifer können gezielt nach bekannten Sicherheitslücken in Caddy suchen</li>
+            <li>Die TRACE-Methode kann in bestimmten Szenarien für "Cross-Site Tracing" Angriffe missbraucht werden</li>
+            <li>Je mehr ein Angreifer über eure Infrastruktur weiß, desto einfacher kann er angreifen</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Deaktiviere unnötige HTTP-Methoden:</p>
+        <pre><code># Caddyfile
+@bad_methods {
+    method TRACE TRACK
+}
+respond @bad_methods 405</code></pre>
+        
+        <p><strong>Schritt 2:</strong> Entferne Server-Informationen aus den Response-Headern (Caddy macht das standardmäßig schon gut, aber prüft es):</p>
+        <pre><code># Server-Header entfernen, falls vorhanden
+header -Server</code></pre>
+    </div>
+</div>
+
+<!-- Finding 6 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-3">Prio 6</span> – HSTS-Header fehlt</h3>
+        <span class="risk-low">Risiko: Low</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>HSTS (HTTP Strict Transport Security) sagt dem Browser: "Verbinde dich mit dieser Seite immer nur über HTTPS, niemals über unverschlüsseltes HTTP." Ohne diesen Header könnte ein Angreifer den Nutzer auf eine HTTP-Version umleiten.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <p>Bei einem "Man-in-the-Middle" Angriff (z.B. in einem öffentlichen WLAN) könnte ein Angreifer die erste Verbindung abfangen und auf HTTP umleiten. Dann kann er alles mitlesen – Passwörter, Session-Cookies, etc.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <pre><code># Caddyfile
+header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"</code></pre>
+        <p><strong>Erklärung:</strong></p>
+        <ul>
+            <li><code>max-age=31536000</code> – Browser merkt sich das 1 Jahr lang</li>
+            <li><code>includeSubDomains</code> – Gilt auch für alle Subdomains</li>
+            <li><code>preload</code> – Ermöglicht Aufnahme in die Browser-Preload-Liste</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Finding 7 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-3">Prio 7</span> – Externe JavaScript-Quellen</h3>
+        <span class="risk-low">Risiko: Low</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>Eure Seite lädt JavaScript von <code>cdnjs.cloudflare.com</code> (jQuery und Cookie-Consent). Wenn dieses CDN kompromittiert wird, könnte Schadcode auf eurer Seite ausgeführt werden.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Option 1:</strong> Nutze Subresource Integrity (SRI) – der Browser prüft dann, ob die Datei verändert wurde:</p>
+        <pre><code>&lt;script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"
+        integrity="sha384-rY/jv8mMhqDabXSo+UCggqKtdmBfd3qC2/KvyTDNQ6PcUJXaxK1tMepoQda4g5vB"
+        crossorigin="anonymous"&gt;&lt;/script&gt;</code></pre>
+        
+        <p><strong>Option 2:</strong> Hostet die Dateien selbst auf eurem Server. Das ist sicherer, aber ihr müsst sie dann selbst aktuell halten.</p>
+    </div>
+</div>
+
+<!-- Finding 8 -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-3">Prio 8</span> – Gefährliche JS-Funktionen (Angular)</h3>
+        <span class="risk-low">Risiko: Low</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was ist das Problem?</div>
+        <p>Im Code wurde die Funktion <code>bypassSecurityTrustHtml()</code> gefunden. Diese Angular-Funktion umgeht bewusst die eingebaute XSS-Schutzfunktion von Angular.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">⚠️ Warum ist das gefährlich?</div>
+        <p>Wenn ihr <code>bypassSecurityTrustHtml()</code> mit Benutzereingaben verwendet, kann ein Angreifer Schadcode einschleusen. Angular schützt euch normalerweise davor – aber mit dieser Funktion schaltet ihr den Schutz ab.</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p><strong>Schritt 1:</strong> Sucht im Code nach allen Verwendungen:</p>
+        <pre><code>grep -r "bypassSecurityTrust" src/</code></pre>
+        
+        <p><strong>Schritt 2:</strong> Prüft jeden Fall: Wird hier wirklich vertrauenswürdiger Inhalt verwendet? Wenn Benutzereingaben beteiligt sind, müsst ihr sie vorher serverseitig bereinigen (Sanitization).</p>
+        
+        <p><strong>Schritt 3:</strong> Überlegt, ob ihr die Funktion wirklich braucht. Oft gibt es sicherere Alternativen.</p>
+    </div>
+</div>
+
+<!-- Finding 9+10 kombiniert -->
+<div class="finding">
+    <div class="finding-header">
+        <h3><span class="prio-3">Prio 9-10</span> – Weitere Security-Header fehlen</h3>
+        <span class="risk-low">Risiko: Low</span>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">❓ Was fehlt?</div>
+        <ul>
+            <li><strong>Feature-Policy → Permissions-Policy:</strong> Der alte Header-Name wird verwendet</li>
+            <li><strong>Cross-Origin-Embedder-Policy (COEP):</strong> Schutz gegen Spectre-Angriffe</li>
+            <li><strong>Cross-Origin-Opener-Policy (COOP):</strong> Isolation von Browser-Kontexten</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">✅ Lösung</div>
+        <p>Füge diese Header zu eurer Caddy-Konfiguration hinzu:</p>
+        <pre><code># Caddyfile - Vollständige Security Header
+header {
+    # HSTS
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # XSS/Injection Schutz
+    Content-Security-Policy "default-src 'self'; script-src 'self' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    
+    # Spectre-Schutz
+    Cross-Origin-Embedder-Policy "require-corp"
+    Cross-Origin-Opener-Policy "same-origin"
+    
+    # Permissions (ersetzt Feature-Policy)
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    
+    # Alten Header entfernen
+    -Feature-Policy
+}</code></pre>
+    </div>
+</div>
+
+<div class="next-steps">
+    <h3>📝 Empfohlene Reihenfolge der Behebung</h3>
+    <ol>
+        <li><strong>Sofort (heute):</strong> Backup-Dateien vom Server löschen (Prio 1)</li>
+        <li><strong>Diese Woche:</strong> CORS richtig konfigurieren und 403-Bypass fixen (Prio 2-3)</li>
+        <li><strong>Nächste Woche:</strong> Alle Security-Header hinzufügen (Prio 4-6, 9-10)</li>
+        <li><strong>Bei Gelegenheit:</strong> Externe Skripte mit SRI absichern, Code-Review für bypassSecurityTrustHtml (Prio 7-8)</li>
+    </ol>
+    
+    <h3>🔄 Nach den Fixes</h3>
+    <ul>
+        <li>Führt einen erneuten ZAP-Scan durch, um zu prüfen, ob alle Probleme behoben sind</li>
+        <li>Testet eure Anwendung gründlich – manche Security-Header können Funktionen beeinträchtigen</li>
+        <li>Richtet regelmäßige automatische Scans ein (z.B. wöchentlich)</li>
+    </ul>
+</div>
+
+<p style="text-align:center; color:#666; margin-top:40px; padding-top:20px; border-top:1px solid #ddd;">
+    Diese Auswertung wurde basierend auf dem OWASP ZAP Report vom 26.11.2025 erstellt.<br>
+    Bei Fragen wendet euch an euer Security-Team.
+</p>
+
+</body>
+</html>
