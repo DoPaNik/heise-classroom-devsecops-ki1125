@@ -1,0 +1,178 @@
+name: Collect and Send Artifacts to n8n
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflows:
+        description: 'Workflows zum Einsammeln (kommasepariert, z.B. "ci.yml,security-scan.yml")'
+        required: false
+        default: 'all'
+      max_runs:
+        description: 'Max. Anzahl der letzten Runs pro Workflow'
+        required: false
+        default: '1'
+
+jobs:
+  collect-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests PyGithub
+
+      - name: Collect Artifacts from Workflows
+        id: collect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MAX_RUNS: ${{ inputs.max_runs }}
+          WORKFLOWS: ${{ inputs.workflows }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import json
+          import requests
+          from datetime import datetime
+          from github import Github
+
+          # GitHub Setup
+          g = Github(os.getenv('GITHUB_TOKEN'))
+          repo = g.get_repo(os.getenv('REPO'))
+          max_runs = int(os.getenv('MAX_RUNS', 5))
+          workflows_input = os.getenv('WORKFLOWS', 'all')
+
+          collected_artifacts = []
+
+          # Alle Workflows oder spezifische
+          if workflows_input.lower() == 'all':
+              workflows = repo.get_workflows()
+          else:
+              workflow_names = [w.strip() for w in workflows_input.split(',')]
+              workflows = [repo.get_workflow(name) for name in workflow_names]
+
+          print(f"📦 Sammle Artefakte von Workflows...")
+
+          for workflow in workflows:
+              print(f"\n🔍 Workflow: {workflow.name}")
+
+              # Letzte erfolgreiche Runs
+              runs = workflow.get_runs(status='success')[:max_runs]
+
+              for run in runs:
+                  artifacts = run.get_artifacts()
+
+                  if artifacts.totalCount == 0:
+                      continue
+
+                  print(f"  ✓ Run #{run.run_number} ({run.created_at}): {artifacts.totalCount} Artefakt(e)")
+
+                  for artifact in artifacts:
+                      artifact_data = {
+                          'workflow_name': workflow.name,
+                          'workflow_id': workflow.id,
+                          'run_number': run.run_number,
+                          'run_id': run.id,
+                          'run_url': run.html_url,
+                          'artifact_name': artifact.name,
+                          'artifact_id': artifact.id,
+                          'artifact_size': artifact.size_in_bytes,
+                          'artifact_url': artifact.archive_download_url,
+                          'created_at': run.created_at.isoformat(),
+                          'branch': run.head_branch,
+                          'commit_sha': run.head_sha[:7],
+                          'commit_message': run.head_commit.message.split('\n')[0] if run.head_commit else 'N/A',
+                          'actor': run.actor.login
+                      }
+
+                      collected_artifacts.append(artifact_data)
+
+          # Zusammenfassung
+          print(f"\n📊 Gesammelt: {len(collected_artifacts)} Artefakte von {len(workflows)} Workflow(s)")
+
+          # Als JSON für nächsten Step speichern
+          with open('artifacts.json', 'w') as f:
+              json.dump({
+                  'repository': os.getenv('REPO'),
+                  'collected_at': datetime.now().isoformat(),
+                  'total_artifacts': len(collected_artifacts),
+                  'artifacts': collected_artifacts
+              }, f, indent=2)
+
+          # Summary für GitHub Actions
+          with open(os.getenv('GITHUB_STEP_SUMMARY'), 'a') as f:
+              f.write(f"## 📦 Artefakte Sammlung\n\n")
+              f.write(f"- **Repository**: {os.getenv('REPO')}\n")
+              f.write(f"- **Workflows**: {len(workflows)}\n")
+              f.write(f"- **Artefakte gesamt**: {len(collected_artifacts)}\n\n")
+
+              if collected_artifacts:
+                  f.write("### Gefundene Artefakte\n\n")
+                  f.write("| Workflow | Run | Artefakt | Größe |\n")
+                  f.write("|----------|-----|----------|-------|\n")
+                  for a in collected_artifacts[:10]:  # Erste 10
+                      size_mb = a['artifact_size'] / 1024 / 1024
+                      f.write(f"| {a['workflow_name']} | #{a['run_number']} | {a['artifact_name']} | {size_mb:.2f} MB |\n")
+
+                  if len(collected_artifacts) > 10:
+                      f.write(f"\n... und {len(collected_artifacts) - 10} weitere\n")
+
+          EOF
+
+      - name: Upload Collected Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: collected-artifacts-metadata
+          path: artifacts.json
+          retention-days: 7
+
+      - name: Send to n8n Webhook
+        env:
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+        run: |
+          if [ -z "$N8N_WEBHOOK_URL" ]; then
+            echo "⚠️  N8N_WEBHOOK_URL Secret nicht gesetzt!"
+            echo "Bitte konfiguriere das Secret in GitHub: Settings > Secrets > Actions"
+            exit 1
+          fi
+
+          echo "📤 Sende Daten an n8n Webhook..."
+
+          # JSON-Daten an n8n senden
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d @artifacts.json \
+            "$N8N_WEBHOOK_URL")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Erfolgreich gesendet (HTTP $http_code)"
+            echo "$body"
+          else
+            echo "❌ Fehler beim Senden (HTTP $http_code)"
+            echo "$body"
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "🎉 Workflow abgeschlossen!"
+          echo ""
+          echo "Nächste Schritte:"
+          echo "1. Prüfe das Artefakt 'collected-artifacts-metadata' für Details"
+          echo "2. Überprüfe n8n für eingehende Daten"
+          echo "3. Workflow kann erneut manuell gestartet werden"
