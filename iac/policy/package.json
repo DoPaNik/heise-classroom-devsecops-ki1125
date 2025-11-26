@@ -1,0 +1,9 @@
+{
+    "name": "heise-security-policies",
+    "version": "0.0.1",
+    "description": "CrossGuard Security Policies für DigitalOcean & Cloudflare",
+    "main": "index.ts",
+    "dependencies": {
+        "@pulumi/policy": "^1.0.0"
+    }
+}
